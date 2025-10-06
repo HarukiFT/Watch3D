@@ -1,9 +1,46 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { OrbitControls, Environment, useProgress } from "@react-three/drei";
 import { Clock } from "./components/Clock";
 import { useMemo, useState } from "react";
 import { resolveTimeZone } from "./utils/timezone";
 import "./App.css";
+import { Logo } from "./components/Logo";
+import { Arrow } from "./components/Arrow";
+
+function LoadingOverlay() {
+  const { active, progress } = useProgress();
+
+  if (!active) return null;
+  return (
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
+      <div
+        className={`flex items-center justify-center flex-col max-w-[508px] w-full gap-11`}
+      >
+        <Logo />
+
+        <div className=" w-full relative">
+          <div className="h-[1px] bg-[#363636] w-full absolute top-0 left-0">
+            <div
+              className="h-[1px] bg-[#FFFFFF] w-0 absolute top-0 left-0"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Onboarding() {
+  return (
+    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center z-20 gap-3">
+      <Arrow />
+      <p className="text-white text-xs opacity-50 font-[350]">
+        ВРАЩАЙТЕ ЧАСЫ, ЗАЖАВ ЛЕВУЮ КНОПКУ МЫШИ
+      </p>
+    </div>
+  );
+}
 
 function App() {
   const timeZone = useMemo(() => {
@@ -33,6 +70,8 @@ function App() {
 
   return (
     <div className="App">
+      <LoadingOverlay />
+      <Onboarding />
       <Canvas
         camera={{ position: [0, 0, 0.25], fov: 50 }}
         style={{ background: "#000000" }}
@@ -41,7 +80,7 @@ function App() {
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
-        <Environment preset="studio" />
+        <Environment files="/hdri/studio_small_03_1k.hdr" background={false} />
 
         <Clock
           position={[0, 0, 0]}
