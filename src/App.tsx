@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, useProgress } from "@react-three/drei";
 import { Clock } from "./components/Clock";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { resolveTimeZone } from "./utils/timezone";
 import "./App.css";
 import { Logo } from "./components/Logo";
@@ -9,6 +9,25 @@ import { Arrow } from "./components/Arrow";
 
 function LoadingOverlay() {
   const { active, progress } = useProgress();
+  const [displayProgress, setDisplayProgress] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const animate = (t: number) => {
+      if (progress > 0) {
+        setDisplayProgress((p) => Math.max(p, progress));
+      } else if (active) {
+        const elapsed = (t - start) / 1000;
+        const target = 90 * (1 - Math.exp(-elapsed / 6));
+        setDisplayProgress((p) => (p < target ? target : p));
+      }
+      if (active) raf = requestAnimationFrame(animate);
+    };
+    if (active) raf = requestAnimationFrame(animate);
+    else setDisplayProgress(100);
+    return () => cancelAnimationFrame(raf);
+  }, [active, progress]);
 
   if (!active) return null;
   return (
@@ -22,7 +41,7 @@ function LoadingOverlay() {
           <div className="h-[1px] bg-[#363636] w-full absolute top-0 left-0">
             <div
               className="h-[1px] bg-[#FFFFFF] w-0 absolute top-0 left-0"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${displayProgress}%` }}
             />
           </div>
         </div>
