@@ -51,7 +51,6 @@ function App() {
           timeZone={timeZone}
         />
 
-        {/* Управление камерой */}
         <OrbitControls
           enablePan={true}
           enableZoom={true}
