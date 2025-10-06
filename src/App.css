@@ -79,16 +79,6 @@
   overflow: hidden;
 }
 
-.loader-bar__auto {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.25);
-  transform-origin: left center;
-  animation: loaderAutoGrow 5.5s ease-out infinite;
-}
-
 .loader-bar__real {
   position: absolute;
   left: 0;

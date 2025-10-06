@@ -12,9 +12,8 @@ function LoadingOverlay() {
 
   const [displayedProgress, setDisplayedProgress] = useState(0);
   const [visible, setVisible] = useState(false);
-  const rafRef = useRef<number | null>(null);
-  const lastTsRef = useRef<number>(0);
-  const lastSyncRef = useRef<number>(0);
+  const intervalRef = useRef<number | null>(null);
+  const startTsRef = useRef<number>(0);
 
   useEffect(() => {
     if (active) {
@@ -25,53 +24,49 @@ function LoadingOverlay() {
   useEffect(() => {
     if (!visible) return;
 
-    const animate = (ts: number) => {
-      const lastTs = lastTsRef.current || ts;
-      const dt = Math.min((ts - lastTs) / 1000, 0.2);
-      lastTsRef.current = ts;
+    if (!startTsRef.current) startTsRef.current = performance.now();
 
-      const real = progress; // 0..100
-      let next = displayedProgress;
+    const computeFloor = (elapsedMs: number) => {
+      const t = elapsedMs / 1000;
+      if (t <= 6) return (t / 6) * 60; // 0..60% in 6s
+      if (t <= 12) return 60 + ((t - 6) / 6) * 25; // 60..85% by 12s
+      if (t <= 20) return 85 + ((t - 12) / 8) * 10; // 85..95% by 20s
+      if (t <= 35) return 95 + ((t - 20) / 15) * 3; // 95..98% by 35s
+      return 98; // cap at 98 until real completes
+    };
 
-      const phase = Math.min(next, 95);
-      const baseRatePerSec = phase < 70 ? 25 : phase < 90 ? 12 : 4;
-      const jitter = (Math.sin(ts / 250) + 1) * 0.25;
-      const increment = (baseRatePerSec + jitter) * dt;
-      next = Math.min(next + increment, 98);
+    const tick = () => {
+      const now = performance.now();
+      const elapsed = now - startTsRef.current;
+      const floor = computeFloor(elapsed);
+      const real = progress;
+      const target = Math.max(floor, real, displayedProgress);
 
-      const lastSync = lastSyncRef.current || 0;
-      if (ts - lastSync > 1200) {
-        lastSyncRef.current = ts;
-        const target = Math.max(next, real);
-        next = next + (target - next) * 0.35;
-      }
-
-      next = Math.max(next, real);
+      const ease = target - displayedProgress;
+      const step = Math.max(0.4, Math.min(3.0, ease * 0.35));
+      const next = Math.min(98, displayedProgress + step);
 
       if (!active) {
-        const completed = next + (100 - next) * Math.min(1, dt * 6);
-        setDisplayedProgress(completed);
-        if (completed >= 99.8) {
+        const finished = displayedProgress + (100 - displayedProgress) * 0.25;
+        const val = finished >= 99.8 ? 100 : finished;
+        setDisplayedProgress(val);
+        if (val >= 100) {
           setTimeout(() => {
             setVisible(false);
             setDisplayedProgress(0);
-            lastTsRef.current = 0;
-            lastSyncRef.current = 0;
-          }, 180);
-        } else {
-          rafRef.current = requestAnimationFrame(animate);
+            startTsRef.current = 0;
+          }, 150);
         }
         return;
       }
 
-      setDisplayedProgress(next);
-      rafRef.current = requestAnimationFrame(animate);
+      setDisplayedProgress(Math.max(next, real));
     };
 
-    rafRef.current = requestAnimationFrame(animate);
+    intervalRef.current = window.setInterval(tick, 100);
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+      if (intervalRef.current) window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
   }, [visible, active, progress, displayedProgress]);
 
@@ -85,7 +80,6 @@ function LoadingOverlay() {
 
         <div className="w-full relative">
           <div className="loader-bar">
-            <div className="loader-bar__auto" style={{ width: "95%" }} />
             <div
               className="loader-bar__real"
               style={{ width: `${displayedProgress}%` }}
