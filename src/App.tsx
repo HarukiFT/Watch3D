@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, useProgress } from "@react-three/drei";
 import { Clock } from "./components/Clock";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveTimeZone } from "./utils/timezone";
 import "./App.css";
 import { Logo } from "./components/Logo";
@@ -9,40 +9,89 @@ import { Arrow } from "./components/Arrow";
 
 function LoadingOverlay() {
   const { active, progress } = useProgress();
-  const [displayProgress, setDisplayProgress] = useState(0);
+
+  const [displayedProgress, setDisplayedProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const rafRef = useRef<number | null>(null);
+  const lastTsRef = useRef<number>(0);
+  const lastSyncRef = useRef<number>(0);
 
   useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const animate = (t: number) => {
-      if (progress > 0) {
-        setDisplayProgress((p) => Math.max(p, progress));
-      } else if (active) {
-        const elapsed = (t - start) / 1000;
-        const target = 90 * (1 - Math.exp(-elapsed / 6));
-        setDisplayProgress((p) => (p < target ? target : p));
-      }
-      if (active) raf = requestAnimationFrame(animate);
-    };
-    if (active) raf = requestAnimationFrame(animate);
-    else setDisplayProgress(100);
-    return () => cancelAnimationFrame(raf);
-  }, [active, progress]);
+    if (active) {
+      setVisible(true);
+    }
+  }, [active]);
 
-  if (!active) return null;
+  useEffect(() => {
+    if (!visible) return;
+
+    const animate = (ts: number) => {
+      const lastTs = lastTsRef.current || ts;
+      const dt = Math.min((ts - lastTs) / 1000, 0.2);
+      lastTsRef.current = ts;
+
+      const real = progress; // 0..100
+      let next = displayedProgress;
+
+      const phase = Math.min(next, 95);
+      const baseRatePerSec = phase < 70 ? 25 : phase < 90 ? 12 : 4;
+      const jitter = (Math.sin(ts / 250) + 1) * 0.25;
+      const increment = (baseRatePerSec + jitter) * dt;
+      next = Math.min(next + increment, 98);
+
+      const lastSync = lastSyncRef.current || 0;
+      if (ts - lastSync > 1200) {
+        lastSyncRef.current = ts;
+        const target = Math.max(next, real);
+        next = next + (target - next) * 0.35;
+      }
+
+      next = Math.max(next, real);
+
+      if (!active) {
+        const completed = next + (100 - next) * Math.min(1, dt * 6);
+        setDisplayedProgress(completed);
+        if (completed >= 99.8) {
+          setTimeout(() => {
+            setVisible(false);
+            setDisplayedProgress(0);
+            lastTsRef.current = 0;
+            lastSyncRef.current = 0;
+          }, 180);
+        } else {
+          rafRef.current = requestAnimationFrame(animate);
+        }
+        return;
+      }
+
+      setDisplayedProgress(next);
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [visible, active, progress, displayedProgress]);
+
+  if (!visible) return null;
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
       <div
-        className={`flex items-center justify-center flex-col max-w-[508px] w-full gap-11`}
+        className={`flex items-center justify-center flex-col max-w-[508px] w-full gap-8`}
       >
         <Logo />
 
-        <div className=" w-full relative">
+        <div className="w-full relative">
           <div className="h-[1px] bg-[#363636] w-full absolute top-0 left-0">
             <div
-              className="h-[1px] bg-[#FFFFFF] w-0 absolute top-0 left-0"
-              style={{ width: `${displayProgress}%` }}
+              className="h-[1px] bg-[#FFFFFF] w-0 absolute top-0 left-0 transition-[width]"
+              style={{ width: `${displayedProgress}%` }}
             />
+          </div>
+          <div className="mt-3 text-center text-white/70 text-xs font-[350]">
+            {Math.round(displayedProgress)}%
           </div>
         </div>
       </div>
@@ -52,7 +101,7 @@ function LoadingOverlay() {
 
 function Onboarding() {
   return (
-    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center z-20 gap-3">
+    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center z-20 gap-2">
       <Arrow />
       <p className="text-white text-xs opacity-50 font-[350]">
         ВРАЩАЙТЕ ЧАСЫ, ЗАЖАВ ЛЕВУЮ КНОПКУ МЫШИ
@@ -99,10 +148,7 @@ function App() {
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
-        <Environment
-          files={`${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`}
-          background={false}
-        />
+        <Environment preset="studio" />
 
         <Clock
           position={[0, 0, 0]}
