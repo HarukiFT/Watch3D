@@ -27,8 +27,15 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install deps
-        run: npm ci
+      - name: Show Node & npm
+        run: |
+          node -v
+          npm -v
+
+      - name: Clean install (workaround rollup optional deps)
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Build
         run: |
