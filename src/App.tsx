@@ -84,11 +84,13 @@ function LoadingOverlay() {
         <Logo />
 
         <div className="w-full relative">
-          <div className="h-[1px] bg-[#363636] w-full absolute top-0 left-0">
+          <div className="loader-bar">
+            <div className="loader-bar__auto" style={{ width: "95%" }} />
             <div
-              className="h-[1px] bg-[#FFFFFF] w-0 absolute top-0 left-0 transition-[width]"
+              className="loader-bar__real"
               style={{ width: `${displayedProgress}%` }}
             />
+            <div className="loader-bar__shimmer" />
           </div>
           <div className="mt-3 text-center text-white/70 text-xs font-[350]">
             {Math.round(displayedProgress)}%

@@ -46,3 +46,76 @@
 .read-the-docs {
   color: #888;
 }
+
+@keyframes loaderAutoGrow {
+  0% {
+    transform: scaleX(0.02);
+  }
+  50% {
+    transform: scaleX(0.75);
+  }
+  85% {
+    transform: scaleX(0.92);
+  }
+  100% {
+    transform: scaleX(0.95);
+  }
+}
+
+@keyframes loaderShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.loader-bar {
+  position: relative;
+  height: 1px;
+  background: #363636;
+  width: 100%;
+  overflow: hidden;
+}
+
+.loader-bar__auto {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+  transform-origin: left center;
+  animation: loaderAutoGrow 5.5s ease-out infinite;
+}
+
+.loader-bar__real {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: #ffffff;
+}
+
+.loader-bar__shimmer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
+  opacity: 0.6;
+  animation: loaderShimmer 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-bar__auto,
+  .loader-bar__shimmer {
+    animation: none;
+  }
+}
