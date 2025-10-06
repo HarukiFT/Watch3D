@@ -123,6 +123,12 @@ function App() {
     minute: { x: 0, y: (0 * Math.PI) / 180, z: 0 },
     hour: { x: 0, y: (0 * Math.PI) / 180, z: 0 },
   });
+  const [mountHeavyScene, setMountHeavyScene] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMountHeavyScene(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleOffsetChange = (
     hand: string,
@@ -150,15 +156,18 @@ function App() {
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
-        <Environment preset="studio" />
-
-        <Clock
-          position={[0, 0, 0]}
-          scale={[2, 2, 2]}
-          offsets={offsets}
-          onOffsetChange={handleOffsetChange}
-          timeZone={timeZone}
-        />
+        {mountHeavyScene && (
+          <>
+            <Environment preset="studio" />
+            <Clock
+              position={[0, 0, 0]}
+              scale={[2, 2, 2]}
+              offsets={offsets}
+              onOffsetChange={handleOffsetChange}
+              timeZone={timeZone}
+            />
+          </>
+        )}
 
         <OrbitControls
           enablePan={true}
