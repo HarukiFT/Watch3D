@@ -80,7 +80,10 @@ function App() {
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -5]} intensity={0.5} />
 
-        <Environment files="/hdri/studio_small_03_1k.hdr" background={false} />
+        <Environment
+          files={`${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`}
+          background={false}
+        />
 
         <Clock
           position={[0, 0, 0]}
