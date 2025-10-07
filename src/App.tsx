@@ -162,7 +162,7 @@ function App() {
         {mountHeavyScene && (
           <>
             <Environment
-              files={import.meta.env.BASE_URL + "forest_slope_1k.hdr"}
+              files={import.meta.env.BASE_URL + "/hdri/forest_slope_1k.hdr"}
             />
             <Clock
               position={[0, 0, 0]}
