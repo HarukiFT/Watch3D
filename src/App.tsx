@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useProgress } from "@react-three/drei";
+import { Environment, OrbitControls, useProgress } from "@react-three/drei";
 import { Clock } from "./components/Clock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveTimeZone } from "./utils/timezone";
@@ -143,35 +143,27 @@ function App() {
     <div className="App">
       <LoadingOverlay clockLoading={clockLoading} />
       <Onboarding />
+
       <Canvas
         camera={{ position: [0, 0, 0.25], fov: 50 }}
         style={{ background: "#000000" }}
       >
-        <ambientLight intensity={0.6} color="#ffffff" />
-
         <directionalLight
-          position={[0.5, 0.5, 0.5]}
+          position={[4, 1, 5]}
           intensity={5}
           color="#ffffff"
-        />
-        <directionalLight
-          position={[-0.5, 0.5, 0.5]}
-          intensity={5}
-          color="#ffffff"
-        />
-        <directionalLight
-          position={[0, -0.5, 0.5]}
-          intensity={4}
-          color="#ffffff"
-        />
-        <directionalLight
-          position={[0, 0, -0.7]}
-          intensity={2}
-          color="#ffffff"
+          rotation={[
+            (37 * Math.PI) / 180,
+            (3 * Math.PI) / 180,
+            (106 * Math.PI) / 180,
+          ]}
         />
 
         {mountHeavyScene && (
           <>
+            <Environment
+              files={import.meta.env.BASE_URL + "forest_slope_1k.hdr"}
+            />
             <Clock
               position={[0, 0, 0]}
               scale={[2, 2, 2]}
