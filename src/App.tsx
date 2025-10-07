@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment, useProgress } from "@react-three/drei";
+import { OrbitControls, useProgress } from "@react-three/drei";
 import { Clock } from "./components/Clock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveTimeZone } from "./utils/timezone";
@@ -7,7 +7,7 @@ import "./App.css";
 import { Logo } from "./components/Logo";
 import { Arrow } from "./components/Arrow";
 
-function LoadingOverlay() {
+function LoadingOverlay({ clockLoading }: { clockLoading: boolean }) {
   const { active, progress } = useProgress();
 
   const [displayedProgress, setDisplayedProgress] = useState(0);
@@ -16,10 +16,10 @@ function LoadingOverlay() {
   const startTsRef = useRef<number>(0);
 
   useEffect(() => {
-    if (active) {
+    if (active || clockLoading) {
       setVisible(true);
     }
-  }, [active]);
+  }, [active, clockLoading]);
 
   useEffect(() => {
     if (!visible) return;
@@ -28,11 +28,11 @@ function LoadingOverlay() {
 
     const computeFloor = (elapsedMs: number) => {
       const t = elapsedMs / 1000;
-      if (t <= 6) return (t / 6) * 60; // 0..60% in 6s
-      if (t <= 12) return 60 + ((t - 6) / 6) * 25; // 60..85% by 12s
-      if (t <= 20) return 85 + ((t - 12) / 8) * 10; // 85..95% by 20s
-      if (t <= 35) return 95 + ((t - 20) / 15) * 3; // 95..98% by 35s
-      return 98; // cap at 98 until real completes
+      if (t <= 6) return (t / 6) * 60;
+      if (t <= 12) return 60 + ((t - 6) / 6) * 25;
+      if (t <= 20) return 85 + ((t - 12) / 8) * 10;
+      if (t <= 35) return 95 + ((t - 20) / 15) * 3;
+      return 98;
     };
 
     const tick = () => {
@@ -46,7 +46,7 @@ function LoadingOverlay() {
       const step = Math.max(0.4, Math.min(3.0, ease * 0.35));
       const next = Math.min(98, displayedProgress + step);
 
-      if (!active) {
+      if (!active && !clockLoading) {
         const finished = displayedProgress + (100 - displayedProgress) * 0.25;
         const val = finished >= 99.8 ? 100 : finished;
         setDisplayedProgress(val);
@@ -68,7 +68,7 @@ function LoadingOverlay() {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     };
-  }, [visible, active, progress, displayedProgress]);
+  }, [visible, active, clockLoading, progress, displayedProgress]);
 
   if (!visible) return null;
   return (
@@ -118,6 +118,7 @@ function App() {
     hour: { x: 0, y: (0 * Math.PI) / 180, z: 0 },
   });
   const [mountHeavyScene, setMountHeavyScene] = useState(false);
+  const [clockLoading, setClockLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setMountHeavyScene(true), 600);
@@ -140,25 +141,44 @@ function App() {
 
   return (
     <div className="App">
-      <LoadingOverlay />
+      <LoadingOverlay clockLoading={clockLoading} />
       <Onboarding />
       <Canvas
         camera={{ position: [0, 0, 0.25], fov: 50 }}
         style={{ background: "#000000" }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
-        <pointLight position={[-10, -10, -5]} intensity={0.5} />
+        <ambientLight intensity={0.6} color="#ffffff" />
+
+        <directionalLight
+          position={[0.5, 0.5, 0.5]}
+          intensity={5}
+          color="#ffffff"
+        />
+        <directionalLight
+          position={[-0.5, 0.5, 0.5]}
+          intensity={5}
+          color="#ffffff"
+        />
+        <directionalLight
+          position={[0, -0.5, 0.5]}
+          intensity={4}
+          color="#ffffff"
+        />
+        <directionalLight
+          position={[0, 0, -0.7]}
+          intensity={2}
+          color="#ffffff"
+        />
 
         {mountHeavyScene && (
           <>
-            <Environment preset="studio" />
             <Clock
               position={[0, 0, 0]}
               scale={[2, 2, 2]}
               offsets={offsets}
               onOffsetChange={handleOffsetChange}
               timeZone={timeZone}
+              onLoadingChange={setClockLoading}
             />
           </>
         )}

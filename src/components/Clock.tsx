@@ -1,7 +1,9 @@
 import { useRef, useEffect, useState } from "react";
-import { useGLTF, Center } from "@react-three/drei";
+import { Center } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Euler, Group, Mesh } from "three";
+import { Euler, Group, Mesh, Object3D } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { getZonedNowParts } from "../utils/timezone";
 
 interface ClockProps {
@@ -14,6 +16,7 @@ interface ClockProps {
   };
   onOffsetChange?: (hand: string, axis: "x" | "y" | "z", value: number) => void;
   timeZone?: string;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 export function Clock({
@@ -21,11 +24,13 @@ export function Clock({
   scale = [1, 1, 1],
   offsets: externalOffsets,
   timeZone = "Europe/Moscow",
+  onLoadingChange,
 }: ClockProps) {
-  const modelUrl = `${import.meta.env.BASE_URL}Putnik_Classic_lowpoly 2.glb`;
-  const { scene } = useGLTF(modelUrl);
+  const modelUrl = `${import.meta.env.BASE_URL}Putnik.glb`;
   const clockRef = useRef<Group>(null);
+  const [scene, setScene] = useState<Group | null>(null);
   const [handsFound, setHandsFound] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const secondHandRef = useRef<Mesh>(null);
   const minuteHandRef = useRef<Mesh>(null);
@@ -36,17 +41,35 @@ export function Clock({
   const dialRef = useRef<Mesh>(null);
   const spinnerRef = useRef<Mesh>(null);
 
+  const loadAsync = (url: string): Promise<Group> => {
+    return new Promise((resolve) => {
+      const loader = new GLTFLoader();
+      loader.load(url, (gltf: GLTF) => {
+        resolve(gltf.scene);
+      });
+    });
+  };
+
+  useEffect(() => {
+    loadAsync(modelUrl).then((loadedScene) => {
+      setScene(loadedScene);
+      setLoading(false);
+      onLoadingChange?.(false);
+    });
+  }, [modelUrl, onLoadingChange]);
+
   useEffect(() => {
     if (scene) {
       let foundHands = 0;
-      scene.traverse((child) => {
+      scene.traverse((child: Object3D) => {
         if (child instanceof Mesh) {
+          console.log(child.name);
           switch (child.name) {
             case "Cylinder001":
               secondHandRef.current = child;
               foundHands++;
               break;
-            case "Hand_Min_1":
+            case "Hand_Min001":
               secondMinuteHandRef.current = child;
               break;
             case "Cylinder003":
@@ -55,16 +78,16 @@ export function Clock({
             case "Cylinder004":
               spinnerRef.current = child;
               break;
-            case "Hand_Min_2":
+            case "Hand_Min001_1":
               minuteHandRef.current = child;
               foundHands++;
               break;
-            case "Hand_Hour_2":
+            case "Hand_Hour001_1":
               hourHandRef.current = child;
               foundHands++;
               break;
 
-            case "Hand_Hour_1":
+            case "Hand_Hour001":
               secondHourHandRef.current = child;
               break;
             default:
@@ -128,7 +151,7 @@ export function Clock({
 
     if (dialRef.current) {
       dialRef.current.setRotationFromEuler(
-        new Euler(0, 0, (0.5 + (360 / 31) * (date - 6 + 1)) * (Math.PI / 180))
+        new Euler(0, 0, (0.5 + (360 / 31) * (date - 6 - 1)) * (Math.PI / 180))
       );
     }
 
@@ -157,6 +180,10 @@ export function Clock({
     }
   });
 
+  if (loading || !scene) {
+    return null;
+  }
+
   return (
     <group ref={clockRef} position={position} scale={scale}>
       <Center>
@@ -165,5 +192,3 @@ export function Clock({
     </group>
   );
 }
-
-useGLTF.preload(`${import.meta.env.BASE_URL}Putnik_Classic_lowpoly 2.glb`);
