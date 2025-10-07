@@ -188,7 +188,7 @@ function App() {
               timeZone={timeZone}
               onLoadingChange={setClockLoading}
               autoSpin={autoSpin}
-              spinSpeed={0.1}
+              spinSpeed={0.025}
             />
           </>
         )}
