@@ -17,6 +17,8 @@ interface ClockProps {
   onOffsetChange?: (hand: string, axis: "x" | "y" | "z", value: number) => void;
   timeZone?: string;
   onLoadingChange?: (loading: boolean) => void;
+  autoSpin?: boolean;
+  spinSpeed?: number; // radians per second
 }
 
 export function Clock({
@@ -25,6 +27,8 @@ export function Clock({
   offsets: externalOffsets,
   timeZone = "Europe/Moscow",
   onLoadingChange,
+  autoSpin = false,
+  spinSpeed = 0.1,
 }: ClockProps) {
   const modelUrl = `${import.meta.env.BASE_URL}Putnik.glb`;
   const clockRef = useRef<Group>(null);
@@ -99,8 +103,13 @@ export function Clock({
     }
   }, [scene]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!handsFound) return;
+
+    // Apply gentle idle spin to the whole clock group when enabled
+    if (autoSpin && clockRef.current) {
+      clockRef.current.rotation.y += spinSpeed * delta;
+    }
 
     const {
       seconds,

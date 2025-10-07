@@ -95,7 +95,22 @@ function LoadingOverlay({ clockLoading }: { clockLoading: boolean }) {
   );
 }
 
+function isMobileDevice() {
+  if (typeof navigator === "undefined") return false;
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|BlackBerry/i.test(
+    navigator.userAgent
+  );
+}
+
 function Onboarding() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
+
+  if (isMobile) return null;
+
   return (
     <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center z-20 gap-2">
       <Arrow />
@@ -119,6 +134,7 @@ function App() {
   });
   const [mountHeavyScene, setMountHeavyScene] = useState(false);
   const [clockLoading, setClockLoading] = useState(true);
+  const [autoSpin, setAutoSpin] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setMountHeavyScene(true), 600);
@@ -171,6 +187,8 @@ function App() {
               onOffsetChange={handleOffsetChange}
               timeZone={timeZone}
               onLoadingChange={setClockLoading}
+              autoSpin={autoSpin}
+              spinSpeed={0.1}
             />
           </>
         )}
@@ -181,6 +199,7 @@ function App() {
           enableRotate={true}
           minDistance={0.2}
           maxDistance={20}
+          onStart={() => setAutoSpin(false)}
         />
       </Canvas>
     </div>
